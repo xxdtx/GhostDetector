@@ -7,8 +7,11 @@ export default function Layout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false, // Hide the top header
+        headerShown: false, // Hide the top header if you prefer
       }}
-    />
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="explore" />
+    </Stack>
   );
 }

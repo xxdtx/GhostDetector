@@ -2,9 +2,15 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const router = useRouter();
+
+  const handleScanPress = () => {
+    router.push('/explore');
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Ghost EMF Detector</Text>
@@ -70,13 +76,13 @@ export default function HomeScreen() {
       </Text>
       <Text style={styles.description}>
         - In low-EMF environments, unexpected high readings may be of interest.
+      </Text>
+      <Text style={styles.description}>
         - Recalibrate the magnetometer by moving your device in a figure-eight motion for more accurate EMF readings.
       </Text>
 
-      <TouchableOpacity style={styles.scanButton}>
-        <Link href="/explore" style={styles.buttonText}>
-          SCAN
-        </Link>
+      <TouchableOpacity style={styles.scanButton} onPress={handleScanPress}>
+        <Text style={styles.buttonText}>SCAN</Text>
       </TouchableOpacity>
     </ScrollView>
   );

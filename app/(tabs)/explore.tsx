@@ -1,7 +1,14 @@
-// explore.tsx
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Vibration, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Vibration,
+  Alert,
+  Platform,
+  PermissionsAndroid,
+} from 'react-native';
 import { Magnetometer } from 'expo-sensors';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as MediaLibrary from 'expo-media-library';
@@ -23,34 +30,78 @@ export default function ExploreScreen() {
     };
   }, []);
 
-  const startScanning = () => {
-    const magSubscription = Magnetometer.addListener((data) => {
-      const { x, y, z } = data;
-      const magnitude = Math.sqrt(x * x + y * y + z * z);
-      setMagnetometerData(magnitude);
-
-      if (magnitude > sensitivity) {
-        if (!anomalyDetected) {
-          setAnomalyDetected(true);
-          if (alertEnabled) {
-            Vibration.vibrate(500);
+  // Request location permission for accessing the magnetometer
+  const requestLocationPermission = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message:
+              'This app requires access to your location to use the magnetometer for EMF detection.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
           }
+        );
+
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert(
+            'Permission Denied',
+            'Location permission is required to access the magnetometer for EMF detection.'
+          );
+          return false;
         }
-      } else {
-        setAnomalyDetected(false);
       }
-    });
-    setSubscription(magSubscription);
-    setIsScanning(true);
+      return true;
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+      return false;
+    }
+  };
+
+  const startScanning = async () => {
+    try {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) return;
+
+      Magnetometer.setUpdateInterval(100); // Set the update interval to 100ms
+      const magSubscription = Magnetometer.addListener((data) => {
+        const { x, y, z } = data;
+        const magnitude = Math.sqrt(x * x + y * y + z * z);
+        setMagnetometerData(magnitude);
+
+        if (magnitude > sensitivity) {
+          if (!anomalyDetected) {
+            setAnomalyDetected(true);
+            if (alertEnabled) {
+              Vibration.vibrate(500);
+            }
+          }
+        } else {
+          setAnomalyDetected(false);
+        }
+      });
+      setSubscription(magSubscription);
+      setIsScanning(true);
+    } catch (error) {
+      console.error('Error starting scanning:', error);
+      Alert.alert('Error', 'An error occurred while starting the scan.');
+    }
   };
 
   const stopScanning = () => {
-    if (subscription) {
-      subscription.remove();
-      setSubscription(null);
+    try {
+      if (subscription) {
+        subscription.remove();
+        setSubscription(null);
+      }
+      setIsScanning(false);
+      setAnomalyDetected(false);
+    } catch (error) {
+      console.error('Error stopping scanning:', error);
     }
-    setIsScanning(false);
-    setAnomalyDetected(false);
   };
 
   const toggleScanning = () => {
@@ -64,12 +115,10 @@ export default function ExploreScreen() {
   // Voice recording functions
   const startRecording = async () => {
     try {
-      // Request permissions
-      const micPermission = await Audio.requestPermissionsAsync();
-      const mediaPermission = await MediaLibrary.requestPermissionsAsync();
-
-      if (micPermission.status !== 'granted' || mediaPermission.status !== 'granted') {
-        Alert.alert('Permission Denied', 'Permissions are required to record and save audio.');
+      // Request microphone permission when starting recording
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Microphone permission is required to record audio.');
         return;
       }
 
@@ -95,9 +144,21 @@ export default function ExploreScreen() {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
 
-      const asset = await MediaLibrary.createAssetAsync(uri!);
-      await MediaLibrary.createAlbumAsync('Ghost Detector Recordings', asset, false);
+      if (!uri) {
+        Alert.alert('Error', 'Recording URI not found.');
+        return;
+      }
 
+      // Request media library permission when saving the recording
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Storage permission is required to save audio.');
+        return;
+      }
+
+      // Save the recording directly to the media library (without creating an album)
+      await MediaLibrary.createAssetAsync(uri);
+      
       Alert.alert('Recording Saved', 'Your recording has been saved to the media library.');
 
       setRecording(null);
