@@ -34,10 +34,3 @@ cd GhostDetector
 npm install
 
 npx expo start
-
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/xxdtx/GhostDetector.git
-cd GhostDetector
