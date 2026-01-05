@@ -16,7 +16,15 @@ Handling Android microphone and storage permissions
 Working with real device sensors (magnetometer)
 Managing asynchronous sensor and audio lifecycles
 Debugging real-device issues with Expo
+
 Getting Started
+
+## Demo
+
+Download and watch the demo video: [demo.mp4](demo.mp4)
+
+In the demo video, the EMF spike is intentionally triggered by bringing the phone close to laptop speakers to demonstrate real sensor response.
+
 Clone the repository:
 git clone https://github.com/xxdtx/GhostDetector.git
 cd GhostDetector
